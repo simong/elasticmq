@@ -1,3 +1,3 @@
-package org.elasticmq.rest.sqs.model
+package org.elasticmq
 
 case class RedrivePolicy(queueName: String, maxReceiveCount: Int)

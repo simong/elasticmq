@@ -1,5 +1,6 @@
 package org.elasticmq.rest.sqs.model
 
+import org.elasticmq.RedrivePolicy
 import spray.json.{
   DefaultJsonProtocol,
   JsNumber,

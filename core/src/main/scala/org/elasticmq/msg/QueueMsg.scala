@@ -14,6 +14,7 @@ case class UpdateQueueDefaultVisibilityTimeout(newDefaultVisibilityTimeout: Mill
     extends QueueQueueMsg[Unit]
 case class UpdateQueueDelay(newDelay: Duration) extends QueueQueueMsg[Unit]
 case class UpdateQueueReceiveMessageWait(newReceiveMessageWait: Duration) extends QueueQueueMsg[Unit]
+case class UpdateQueueRedrivePolicy(newRedrivePolicy: RedrivePolicy) extends QueueQueueMsg[Unit]
 case class GetQueueStatistics(deliveryTime: Long) extends QueueQueueMsg[QueueStatistics]
 case class ClearQueue() extends QueueQueueMsg[Unit]
 

@@ -1,7 +1,7 @@
 package org.elasticmq.rest.sqs
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.elasticmq.rest.sqs.model.RedrivePolicy
+import org.elasticmq.RedrivePolicy
 import org.scalatest.{FlatSpec, Matchers}
 import spray.json._
 

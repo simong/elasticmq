@@ -16,7 +16,6 @@ import scala.util.control.Exception._
 import com.amazonaws.AmazonServiceException
 import org.elasticmq.util.Logging
 import org.elasticmq._
-import org.elasticmq.rest.sqs.model.RedrivePolicy
 
 class AmazonJavaSdkTestSuite extends FunSuite with Matchers with BeforeAndAfter with Logging {
   val visibilityTimeoutAttribute = "VisibilityTimeout"
@@ -1456,7 +1455,7 @@ class AmazonJavaSdkTestSuite extends FunSuite with Matchers with BeforeAndAfter 
     }
   }
 
-  test("should validate redrive policy json") {
+  test("should validate the redrive policy json when creating a queue") {
     // Then
     a[AmazonSQSException] shouldBe thrownBy {
       client.createQueue(
@@ -1467,6 +1466,38 @@ class AmazonJavaSdkTestSuite extends FunSuite with Matchers with BeforeAndAfter 
       client.createQueue(
         new CreateQueueRequest("q1")
           .withAttributes(Map(redrivePolicyAttribute -> """{"wrong": "json"}""")))
+    }
+  }
+
+  test("should be able to set the redrive policy on an existing queue") {
+    import spray.json._
+    import org.elasticmq.rest.sqs.model.RedrivePolicyJson._
+    // Given two queues
+    client.createQueue(new CreateQueueRequest("dlq1")).getQueueUrl
+    val mainQueueUrl = client.createQueue(new CreateQueueRequest("q1")).getQueueUrl
+
+    // When setting the redrive policy
+    val policyStr = RedrivePolicy("dlq1", 1).toJson.toString()
+    client.setQueueAttributes(
+      new SetQueueAttributesRequest(mainQueueUrl,
+                                    Map(
+                                      redrivePolicyAttribute -> policyStr
+                                    )))
+
+    // The the redrive policy should be returned when getting the queue attributes
+    val queueAttributes = client.getQueueAttributes(mainQueueUrl, List("All")).getAttributes
+    queueAttributes.get(redrivePolicyAttribute) should be(policyStr)
+  }
+
+  test("should validate the redrive policy json when updating the attributes of a queue") {
+    client.createQueue(new CreateQueueRequest("dlq1")).getQueueUrl
+    val mainQueueUrl = client.createQueue(new CreateQueueRequest("q1")).getQueueUrl
+
+    a[AmazonSQSException] shouldBe thrownBy {
+      client.setQueueAttributes(mainQueueUrl, Map(redrivePolicyAttribute -> "not a proper json policy"))
+    }
+    a[AmazonSQSException] shouldBe thrownBy {
+      client.setQueueAttributes(mainQueueUrl, Map(redrivePolicyAttribute -> """{"wrong": "json"}"""))
     }
   }
 

@@ -1,19 +1,22 @@
 package org.elasticmq.rest.sqs
 
-import org.elasticmq.MillisVisibilityTimeout
+import org.elasticmq.{MillisVisibilityTimeout, RedrivePolicy}
 import Constants._
 import org.joda.time.Duration
 import org.elasticmq.msg.{
   GetQueueStatistics,
+  LookupQueue,
   UpdateQueueDefaultVisibilityTimeout,
   UpdateQueueDelay,
-  UpdateQueueReceiveMessageWait
+  UpdateQueueReceiveMessageWait,
+  UpdateQueueRedrivePolicy
 }
 import org.elasticmq.actor.reply._
 import scala.concurrent.Future
+import scala.util.Try
 
 import org.elasticmq.rest.sqs.directives.ElasticMQDirectives
-import org.elasticmq.rest.sqs.model.RedrivePolicy
+import org.elasticmq.rest.sqs.model.RedrivePolicyJson
 import spray.json._
 
 trait QueueAttributesDirectives {
@@ -30,7 +33,7 @@ trait QueueAttributesDirectives {
     val RedrivePolicyAttribute = "RedrivePolicy"
 
     val AllUnsupportedAttributeNames = PolicyAttribute :: MaximumMessageSizeAttribute ::
-      MessageRetentionPeriodAttribute :: RedrivePolicyAttribute :: Nil
+      MessageRetentionPeriodAttribute :: Nil
   }
 
   object QueueReadableAttributeNames {
@@ -132,6 +135,20 @@ trait QueueAttributesDirectives {
               case ReceiveMessageWaitTimeSecondsAttribute => {
                 queueActor ? UpdateQueueReceiveMessageWait(Duration.standardSeconds(attributeValue.toLong))
               }
+              case RedrivePolicyParameter =>
+                import RedrivePolicyJson._
+
+                for {
+                  newRedrivePolicy <- Future.fromTry(Try(attributeValue.parseJson.convertTo[RedrivePolicy]))
+                  _ = if (newRedrivePolicy.maxReceiveCount < 1 || newRedrivePolicy.maxReceiveCount > 1000) {
+                    throw SQSException.invalidParameterValue
+                  }
+                  dlq <- queueManagerActor ? LookupQueue(newRedrivePolicy.queueName)
+                  _ = if (dlq.isEmpty) {
+                    throw SQSException.nonExistentQueue
+                  }
+                  _ <- queueActor ? UpdateQueueRedrivePolicy(newRedrivePolicy)
+                } yield ()
               case attr
                   if UnsupportedAttributeNames.AllUnsupportedAttributeNames
                     .contains(attr) => {

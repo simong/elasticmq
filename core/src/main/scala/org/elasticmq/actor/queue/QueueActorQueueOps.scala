@@ -19,6 +19,9 @@ trait QueueActorQueueOps extends Logging {
     case UpdateQueueReceiveMessageWait(newReceiveMessageWait) =>
       logger.info(s"${queueData.name}: Updating receive message wait to $newReceiveMessageWait")
       queueData = queueData.copy(receiveMessageWait = newReceiveMessageWait)
+    case UpdateQueueRedrivePolicy(newPolicy) =>
+      val dlqData = DeadLettersQueueData(newPolicy.queueName, newPolicy.maxReceiveCount)
+      queueData = queueData.copy(deadLettersQueue = Some(dlqData))
     case ClearQueue() =>
       messageQueue.clear()
     case GetQueueStatistics(deliveryTime) => getQueueStatistics(deliveryTime)

@@ -6,13 +6,12 @@ import org.elasticmq.rest.sqs.Constants._
 import org.elasticmq.rest.sqs.CreateQueueDirectives._
 import org.elasticmq.rest.sqs.ParametersUtil._
 import org.elasticmq.rest.sqs.directives.ElasticMQDirectives
-import org.elasticmq.{DeadLettersQueueData, MillisVisibilityTimeout, QueueData}
+import org.elasticmq.{DeadLettersQueueData, MillisVisibilityTimeout, QueueData, RedrivePolicy}
 import org.joda.time.{DateTime, Duration}
 import spray.json._
 import scala.async.Async._
 import scala.concurrent.Future
 
-import org.elasticmq.rest.sqs.model.RedrivePolicy
 import spray.json.JsonParser.ParsingException
 
 trait CreateQueueDirectives {
